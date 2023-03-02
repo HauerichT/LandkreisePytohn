@@ -2,51 +2,71 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Pfad zur Datenquelle
 sourceFile = "./landkreis.csv"
+# Zielpfad der Textdatei für Median und Mittelwert
 targetFile = "./landkreise_mittelwert_median.txt"
 
 
+# Aufgabe 2
 def readData(_file):
+    """ Funktion liest Daten aus CSV-Datei ein und gibt diese als Dictionary zurück """
+    # Dictionary zur Speicherung der Landkreise und deren Fläche
     landkreise = {}
+
+    # iteriert über alle Zeilen der CSV-Datei
     with open(_file, encoding="latin-1") as f:
         reader = csv.reader(f, delimiter=';')
         for row in reader:
+            # prüft, ob Zeile mit fünfstelliger Ziffer beginnt
             if row[0].isnumeric() and len(row[0]) == 5:
+                # fügt Zeile zu Dictionary hinzu
                 landkreise[row[1]] = row[2]
+
+    # gibt die Landkreise und deren Fläche als Dictionary zurück
     return landkreise
 
 
+def sortDict(dictionary):
+    """ Funktion sortiert Elemente in einem Dictionary basierend auf den Values """
+    # temporäres Dictionary
+    dictTemp = {}
+
+    # Schleife fügt die Werte aus dem übergebenen Dictionary dem temporären Dictionary hinzu
+    for key, value in dictionary.items():
+        # prüft, ob Fläche eines Landkreises leer ist
+        if not value.__contains__('-'):
+            # fügt Daten als float zum temporären Dictionary hinzu
+            dictTemp[key] = float(value.replace(',', '.'))
+
+    # sortiert die Werte der Größe nach und gibt das temporäre Dictionary zurück
+    return dict(sorted(dictTemp.items(), key=lambda x: x[1], reverse=False))
+
+
+# Aufgabe 3
 def calcAverageAndMedian(dictionary):
     """ Funktion berechnet Mittelwert und Median aus den übergebenen Werten des Dictionary's """
-
-    # Schleife fügt die Werte aus dem übergebenen Dictionary der Liste hinzu
-    values = []
-    for i in dictionary.values():
-        # prüft, ob Fläche eines Landkreises leer ist
-        if not i.__contains__('-'):
-            # fügt den Wert als Float zur Liste hinzu
-            values.append(float(i.replace(',', '.')))
     # sortiert die Werte der Größe nach
-    values.sort()
+    dictTempSorted = sortDict(dictionary)
 
     """ Mittelwert berechnen """
     average = 0.0
     # Summiert alle Werte
-    for i in values:
+    for i in dictTempSorted.values():
         average += i
     # teilt die Summer aller Werte durch die Anzahl der Werte und rundet auf zwei Nachkommastellen
-    average = round((average / len(values)), 2)
+    average = round((average / len(dictTempSorted)), 2)
 
     """ Median berechnen """
     # speichert mittleren Wert
-    mid = (len(values) - 1) // 2
+    mid = (len(dictTempSorted) - 1) // 2
     # prüft, ob Anzahl der Werte gerade oder ungerade ist
-    if len(values) % 2:
+    if len(dictTempSorted) % 2:
         # Anzahl der Werte ungerade: mittlerer Wert ist Median
-        median = values[mid]
+        median = list(dictTempSorted.values())[mid]
     else:
         # Anzahl der Werte gerade: mitte der beiden mittleren Werte ist Median
-        median = (values[mid] + values[mid + 1]) / 2.0
+        median = (list(dictTempSorted.values())[mid] + list(dictTempSorted.values())[mid + 1]) / 2.0
 
     """ Mittelwert und Median in Datei schreiben """
     # versucht Datei zu öffnen
@@ -69,37 +89,71 @@ def calcAverageAndMedian(dictionary):
     return [average, median]
 
 
+# Aufgabe 4
 def getSmallestAndBiggest(d):
-    # Schleife fügt die Werte aus dem übergebenen Dictionary der Liste hinzu
-    values = []
-    for i in d.values():
-        # prüft, ob Fläche eines Landkreises leer ist
-        if not i.__contains__('-'):
-            # fügt den Wert als Float zur Liste hinzu
-            values.append(float(i.replace(',', '.')))
-    # sortiert die Werte der Größe nach
-    values.sort()
+    """ Funktion gibt die zehn größten und kleinsten Landkreise mit deren Flächen zurück """
+    # sortiert das übergebene Dictionary
+    dictTempSorted = sortDict(d)
+    # Dictionary für die zehn kleinsten Landkreise
+    smallest10 = {}
+    # Dictionary für die zehn größten Landkreise
+    biggest10 = {}
 
-    smallest10 = []
-    for i in range(10):
-        smallest10.append(values[i])
+    # fügt die zehn kleinsten Landkreise zum Dictionary hinzu
+    for i in range(len(dictTempSorted)):
+        if i < 10:
+            smallest10[list(dictTempSorted.keys())[i]] = list(dictTempSorted.values())[i]
 
-    biggest10 = []
-    for i in range(len(values) - 1, len(values) - 11, -1):
-        biggest10.append(values[i])
+    # fügt die zehn größten Landkreise zum Dictionary hinzu
+    for i in range(len(dictTempSorted)):
+        if i > len(dictTempSorted) - 10:
+            biggest10[list(dictTempSorted.keys())[i]] = list(dictTempSorted.values())[i]
 
+    # gibt die zehn größten und zehn kleinsten Landkreise als Liste zurück
     return [smallest10, biggest10]
 
 
-def showDiagramm(smallest, biggest):
-    x = np.array(["A", "B", "C", "D"])
-    y = np.array([3, 8, 1, 10])
+# Aufgabe 5
+def showDiagramms(smallest, biggest, allElement):
+    """ Funktion zeigt Diagramme für die kleinsten, größten und alle Landkreise """
+    # erstellt x- und y-Achse mit jeweiligen Werten
+    xSmallest = np.array(list(smallest.keys()))
+    ySmallest = np.array(list(smallest.values()))
+    xBiggest = np.array(list(biggest.keys()))
+    yBiggest = np.array(list(biggest.values()))
+    xAll = np.array(list(allElement.keys()))
+    yAll = np.array(list(allElement.values()))
 
-    plt.bar(x, y)
+    # fügt Beschriftung der Achsen hinzu
+    plt.xlabel('Fläche (in qkm)')
+    plt.ylabel('Landkreis')
+
+    # erzeugt Balkendiagramm für die zehn kleines Landkreise
+    plt.title("Zehn kleinsten Landkreise")
+    plt.barh(xSmallest, ySmallest)
+    plt.show()
+
+    # fügt Beschriftung der Achsen hinzu
+    plt.xlabel('Fläche (in qkm)')
+    plt.ylabel('Landkreis')
+
+    # erzeugt Balkendiagramm für die zehn größten Landkreise
+    plt.title("Zehn größten Landkreise")
+    plt.barh(xBiggest, yBiggest)
+    plt.show()
+
+    # fügt Beschriftung der Achsen hinzu
+    plt.xlabel('Fläche (in qkm)')
+    plt.ylabel('Landkreise')
+
+    # erzeugt Balkendiagramm für alle Landkreise
+    plt.title("Alle Landkreise")
+    plt.tick_params(left=False, labelleft=False)
+    plt.barh(xAll, yAll)
     plt.show()
 
 
 landkreiseDict = readData(sourceFile)
 averageAndMedian = calcAverageAndMedian(landkreiseDict)
 smallestAndBiggest = getSmallestAndBiggest(landkreiseDict)
-showDiagramm(smallestAndBiggest[0], smallestAndBiggest[1])
+showDiagramms(smallestAndBiggest[0], smallestAndBiggest[1], sortDict(landkreiseDict))
